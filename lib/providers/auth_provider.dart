@@ -1,12 +1,13 @@
 import 'package:chat_app/models/user.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class AuthProvider with ChangeNotifier {
+class AuthServiceProvider with ChangeNotifier {
   late CollectionReference users;
   late FirebaseFirestore firestore;
 
-  AuthProvider() {
+  AuthServiceProvider() {
     firestore = FirebaseFirestore.instance;
     users = firestore.collection('users');
   }
@@ -21,47 +22,40 @@ class AuthProvider with ChangeNotifier {
   // sign in user
   Future<bool> signIn(String email, String password) async {
     try {
-      QuerySnapshot querySnapshot = await users
-          .where('email', isEqualTo: email)
-          .where('password', isEqualTo: password)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        return true;
-      } else {
-        throw ('Invalid email or password');
-      }
-    } catch (e) {
-      throw e.toString();
+      final credential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
+      // get user data from firestore and return it
+      return true;
+    } on FirebaseAuthException catch (e) {
+      throw ("Invalid email or password");
     }
   }
 
   // write user data to firestore
-  Future<bool> signUp(User user, String confirmedPassword) async {
+  Future<bool> signUp(
+      UserModel user, String password, String confirmedPassword) async {
     try {
-      bool isValid = signUpValidation(user, confirmedPassword);
+      bool isValid = signUpValidation(user, password, confirmedPassword);
 
       if (isValid) {
-        QuerySnapshot querySnapshot =
-            await users.where('email', isEqualTo: user.email).get();
-        if (querySnapshot.docs.isEmpty) {
-          await users.add({
-            'email': user.email,
-            'username': user.username,
-            'password': user.password
-          });
-          return true;
-        } else {
-          throw ('email already exists');
-        }
+        final credential = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(
+                email: user.email, password: password);
+        await users.add({
+          'email': user.email,
+          'username': user.username,
+          'uid': credential.user!.uid,
+        });
+        return true;
       }
-    } catch (e) {
-      throw e.toString();
+    } on FirebaseAuthException catch (e) {
+      throw e.message.toString();
     }
     return false;
   }
 
-  bool signUpValidation(User user, String confirmedPassword) {
+  bool signUpValidation(
+      UserModel user, String passworld, String confirmedPassword) {
     if (!isValidEmail(user.email)) {
       throw ('Invalid email address');
     }
@@ -70,11 +64,11 @@ class AuthProvider with ChangeNotifier {
       throw ('Username must be at least 3 characters long');
     }
 
-    if (user.password.isEmpty || user.password.length < 6) {
+    if (passworld.isEmpty || passworld.length < 6) {
       throw ('Password must be at least 6 characters long');
     }
 
-    if (user.password != confirmedPassword) {
+    if (passworld != confirmedPassword) {
       throw ('Passwords do not match');
     }
 

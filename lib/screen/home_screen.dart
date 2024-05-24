@@ -46,26 +46,27 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> onLoginClicked(AuthProvider authProvider) async {
+  Future<void> onLoginClicked(AuthServiceProvider authProvider) async {
     try {
       await authProvider.signIn(
           loginEmailController.text, loginPasswordController.text);
       // navigate to chat screen
+      print('Login Success');
     } catch (e) {
       onErrorOccur(e.toString());
     }
   }
 
-  Future<void> onSignUpConfirmClicked(AuthProvider authProvider) async {
-    User user = User(
+  Future<void> onSignUpConfirmClicked(AuthServiceProvider authProvider) async {
+    UserModel user = UserModel(
       email: emailController.text,
       username: usernameController.text,
-      password: passwordController.text,
+      uid: "",
     );
 
     try {
-      bool result =
-          await authProvider.signUp(user, confirmPasswordController.text);
+      bool result = await authProvider.signUp(
+          user, passwordController.text, confirmPasswordController.text);
       if (result) {
         showSuccessDialog();
       }
@@ -106,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+    final authProvider = Provider.of<AuthServiceProvider>(context);
     return Scaffold(
       body: Row(
         children: [
@@ -134,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget signInWidget(AuthProvider authProvider) {
+  Widget signInWidget(AuthServiceProvider authProvider) {
     return Expanded(
       flex: 1,
       child: Padding(
@@ -201,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget signUpWidget(AuthProvider authProvider) {
+  Widget signUpWidget(AuthServiceProvider authProvider) {
     return Expanded(
       flex: 1,
       child: Padding(

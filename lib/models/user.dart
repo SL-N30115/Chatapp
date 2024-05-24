@@ -1,20 +1,20 @@
-class User {
+class UserModel {
   String email;
   String username;
-  String password;
+  String uid;
 
-  User({
+  UserModel({
     required this.email,
     required this.username,
-    required this.password,
+    required this.uid,
   });
 
   // Factory constructor to create a User from JSON
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
       email: json['email'],
       username: json['username'],
-      password: json['password'],
+      uid: json['uid'],
     );
   }
 
@@ -23,7 +23,7 @@ class User {
     return {
       'email': email,
       'username': username,
-      'password': password,
+      'uid': uid,
     };
   }
 }
