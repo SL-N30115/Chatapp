@@ -1,10 +1,11 @@
 import 'package:chat_app/models/message.dart';
 import 'package:chat_app/models/user.dart';
+import 'package:chat_app/providers/auth_provider.dart';
 import 'package:chat_app/providers/chat_provider.dart';
 import 'package:chat_app/providers/user_provider.dart';
+import 'package:chat_app/screen/home_screen.dart';
 import 'package:chat_app/widgets/chatBubble.dart';
 import 'package:chat_app/widgets/contactItem.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
@@ -29,7 +30,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   @override
   void initState() {
     super.initState();
-
+    searchController.addListener(_onTextChanged);
     // Invoke getUsers after the widget has built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       getUsers();
@@ -47,6 +48,27 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     searchController.dispose();
     messageScrollController.dispose();
     super.dispose();
+  }
+
+  void _onTextChanged() {
+    print('Text changed: ${searchController.text}');
+  }
+
+  Future<void> filterUser() async {
+    // filter user by searchController.text
+    if (searchController.text.isEmpty) {
+      await getUsers();
+    } else {
+      users = users
+          .where((user) => user.username
+              .toUpperCase()
+              .contains(searchController.text.toUpperCase()))
+          .toList();
+
+      setState(() {
+        users = users;
+      });
+    }
   }
 
   void _scrollToBottom() {
@@ -67,6 +89,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     inputController.clear();
   }
 
+  Future<void> userSignOut() async {
+    final authProvider =
+        Provider.of<AuthServiceProvider>(context, listen: false);
+    await authProvider.signOut();
+    Navigator.push(
+        context, MaterialPageRoute(builder: (context) => HomeScreen()));
+  }
+
   Future<void> getUsers() async {
     final userProvider =
         Provider.of<UserServiceProvider>(context, listen: false);
@@ -77,6 +107,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Future<void> getChatroom(String targetUserId) async {
+    setState(() {
+      onChatroom = false;
+    });
     final chatProvider =
         Provider.of<ChatServiceProvider>(context, listen: false);
     var chatroom =
@@ -121,8 +154,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                             ],
                           ),
                           const Spacer(),
-                          const Icon(Icons.refresh),
-                          const Icon(Icons.more_vert),
+                          IconButton(
+                              onPressed: () async {
+                                getUsers();
+                              },
+                              icon: const Icon(Icons.refresh)),
+                          IconButton(
+                              onPressed: () async {
+                                userSignOut();
+                              },
+                              icon: const Icon(Icons.logout)),
                         ],
                       ),
                     ),
@@ -133,7 +174,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                         controller: searchController,
                         decoration: InputDecoration(
                           hintText: 'Search',
-                          prefixIcon: const Icon(Icons.search),
+                          prefixIcon: IconButton(
+                            onPressed: () async {
+                              await filterUser();
+                            },
+                            icon: const Icon(Icons.search),
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -232,6 +278,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                             children: [
                               Expanded(
                                 child: TextField(
+                                  onSubmitted: (value) async {
+                                    onSendMessage();
+                                  },
                                   controller: inputController,
                                   decoration: InputDecoration(
                                     hintText:

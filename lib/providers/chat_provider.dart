@@ -42,10 +42,15 @@ class ChatServiceProvider with ChangeNotifier {
     }
   }
 
-  // get chatroom by chatroomID by two input parameter (currentUser-targetUserid) or (targetUserid-currentUser)
   Future<ChatRoomModel> getChatroom(
       String currentUserID, String targetUserId) async {
     try {
+      messages = [];
+      currentChatroom = ChatRoomModel(
+        chatroomID: '',
+        participants: [],
+        messages: [],
+      );
       QuerySnapshot chatroomDocs = await chatrooms.where(FieldPath.documentId,
           whereIn: [
             '$currentUserID-$targetUserId',

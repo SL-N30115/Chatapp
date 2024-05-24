@@ -83,4 +83,8 @@ class AuthServiceProvider with ChangeNotifier {
     );
     return emailRegExp.hasMatch(email);
   }
+
+  Future<void> signOut() async {
+    await FirebaseAuth.instance.signOut();
+  }
 }
