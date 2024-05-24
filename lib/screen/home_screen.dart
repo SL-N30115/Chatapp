@@ -1,5 +1,6 @@
 import 'package:chat_app/models/user.dart';
 import 'package:chat_app/providers/auth_provider.dart';
+import 'package:chat_app/screen/chat_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -48,10 +49,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> onLoginClicked(AuthServiceProvider authProvider) async {
     try {
-      await authProvider.signIn(
+      UserModel user = await authProvider.signIn(
           loginEmailController.text, loginPasswordController.text);
       // navigate to chat screen
-      print('Login Success');
+      Navigator.push(context,
+          MaterialPageRoute(builder: (context) => ChatRoomScreen(user: user)));
     } catch (e) {
       onErrorOccur(e.toString());
     }

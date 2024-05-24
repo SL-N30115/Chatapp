@@ -12,20 +12,22 @@ class AuthServiceProvider with ChangeNotifier {
     users = firestore.collection('users');
   }
 
-  void login(String email, String password) {
-    // Api / Firebase call
-    if (email.isNotEmpty && password.isNotEmpty) {
-      notifyListeners();
-    }
-  }
-
   // sign in user
-  Future<bool> signIn(String email, String password) async {
+  Future<UserModel> signIn(String email, String password) async {
     try {
       final credential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(email: email, password: password);
       // get user data from firestore and return it
-      return true;
+      if (credential.user != null) {
+        DocumentSnapshot userDoc = await users.doc(credential.user!.uid).get();
+        if (userDoc.exists) {
+          return UserModel.fromJson(userDoc.data() as Map<String, dynamic>);
+        } else {
+          throw ("Error Occurs, Please try later");
+        }
+      } else {
+        throw ("Error Occurs, Please try later");
+      }
     } on FirebaseAuthException catch (e) {
       throw ("Invalid email or password");
     }
@@ -41,7 +43,7 @@ class AuthServiceProvider with ChangeNotifier {
         final credential = await FirebaseAuth.instance
             .createUserWithEmailAndPassword(
                 email: user.email, password: password);
-        await users.add({
+        await users.doc(credential.user!.uid).set({
           'email': user.email,
           'username': user.username,
           'uid': credential.user!.uid,

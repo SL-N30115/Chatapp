@@ -1,6 +1,8 @@
 import 'package:chat_app/firebase_options.dart';
 import 'package:chat_app/models/user.dart';
 import 'package:chat_app/providers/auth_provider.dart';
+import 'package:chat_app/providers/chat_provider.dart';
+import 'package:chat_app/providers/user_provider.dart';
 import 'package:chat_app/screen/chat_screen.dart';
 import 'package:chat_app/screen/home_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -12,8 +14,12 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(ChangeNotifierProvider(
-    create: (context) => AuthServiceProvider(),
+  runApp(MultiProvider(
+    providers: [
+      ChangeNotifierProvider(create: (context) => AuthServiceProvider()),
+      ChangeNotifierProvider(create: (context) => UserServiceProvider()),
+      ChangeNotifierProvider(create: (context) => ChatServiceProvider())
+    ],
     child: MyApp(),
   ));
 }
@@ -52,5 +58,6 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
         ),
         home: HomeScreen());
+    // home: ChatRoomScreen(user: user));
   }
 }
