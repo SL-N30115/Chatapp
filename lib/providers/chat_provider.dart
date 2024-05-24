@@ -8,6 +8,7 @@ class ChatServiceProvider with ChangeNotifier {
   late FirebaseFirestore firestore;
   late ChatRoomModel currentChatroom;
   late List<MessageModel> messages = [];
+  late String currentChatRoomID;
 
   ChatServiceProvider() {
     firestore = FirebaseFirestore.instance;
@@ -23,7 +24,7 @@ class ChatServiceProvider with ChangeNotifier {
         participants: [currentUserID, targetUserId],
         messages: List.empty(),
       );
-
+      currentChatRoomID = '$currentUserID-$targetUserId';
       QuerySnapshot chatroomDocs = await chatrooms.where(FieldPath.documentId,
           whereIn: [
             '$currentUserID-$targetUserId',
@@ -113,6 +114,10 @@ class ChatServiceProvider with ChangeNotifier {
         content: message,
         sentAt: DateTime.now(),
       );
+
+      if (currentChatroom.chatroomID.isEmpty) {
+        currentChatroom = await getChatroom(currentUserID, targetUserId);
+      }
 
       await chatrooms
           .doc(currentChatroom.chatroomID)

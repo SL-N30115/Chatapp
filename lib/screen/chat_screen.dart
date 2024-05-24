@@ -1,3 +1,4 @@
+import 'package:chat_app/models/chatroom.dart';
 import 'package:chat_app/models/message.dart';
 import 'package:chat_app/models/user.dart';
 import 'package:chat_app/providers/auth_provider.dart';
@@ -21,16 +22,24 @@ class ChatRoomScreen extends StatefulWidget {
 
 class _ChatRoomScreenState extends State<ChatRoomScreen> {
   bool onChatroom = false;
-  String targetUserName = '';
+  UserModel targetUser = UserModel(
+    uid: '',
+    username: '',
+    email: '',
+  );
   List<UserModel> users = [];
   final TextEditingController inputController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
   final ScrollController messageScrollController = ScrollController();
+  ChatRoomModel chatroom = ChatRoomModel(
+    chatroomID: '',
+    participants: [],
+    messages: [],
+  );
 
   @override
   void initState() {
     super.initState();
-    searchController.addListener(_onTextChanged);
     // Invoke getUsers after the widget has built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       getUsers();
@@ -48,10 +57,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     searchController.dispose();
     messageScrollController.dispose();
     super.dispose();
-  }
-
-  void _onTextChanged() {
-    print('Text changed: ${searchController.text}');
   }
 
   Future<void> filterUser() async {
@@ -85,7 +90,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final chatProvider =
         Provider.of<ChatServiceProvider>(context, listen: false);
     chatProvider.sendMessage(
-        widget.user.uid, users[0].uid, inputController.text);
+        widget.user.uid, targetUser.uid, inputController.text);
     inputController.clear();
   }
 
@@ -112,9 +117,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     });
     final chatProvider =
         Provider.of<ChatServiceProvider>(context, listen: false);
-    var chatroom =
-        await chatProvider.getChatroom(widget.user.uid, targetUserId);
+    var test = await chatProvider.getChatroom(widget.user.uid, targetUserId);
     setState(() {
+      chatroom = test;
       onChatroom = true;
     });
   }
@@ -197,7 +202,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                             onTap: () async {
                               getChatroom(users[index].uid);
                               setState(() {
-                                targetUserName = users[index].username;
+                                targetUser = users[index];
                               });
                             },
                           );
@@ -228,7 +233,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(targetUserName,
+                                  Text(targetUser.username,
                                       style: const TextStyle(
                                           fontWeight: FontWeight.bold)),
                                 ],
@@ -240,34 +245,46 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                         Expanded(
                           // dynamic listview builder
                           child: StreamBuilder(
-                            stream: chatProvider.getMessageHistoryStream(
-                                chatProvider.currentChatroom.chatroomID),
+                            stream: chatProvider
+                                .getMessageHistoryStream(chatroom.chatroomID),
                             builder: (context, snapshot) {
                               if (snapshot.connectionState ==
                                   ConnectionState.waiting) {
-                                return const Center(
-                                  child: CircularProgressIndicator(),
+                                return Center(
+                                    child: CircularProgressIndicator());
+                              } else if (snapshot.hasError) {
+                                return Center(
+                                    child: Text('Error: ${snapshot.error}'));
+                              } else if (!snapshot.hasData ||
+                                  snapshot.data!.isEmpty) {
+                                return Center(child: Text('No messages yet.'));
+                              } else {
+                                WidgetsBinding.instance
+                                    .addPostFrameCallback((_) {
+                                  if (messageScrollController.hasClients) {
+                                    _scrollToBottom();
+                                  }
+                                });
+                                final messages =
+                                    snapshot.data as List<MessageModel>;
+                                if (messages.isEmpty) {
+                                  return const Center(
+                                    child: Text('No messages yet'),
+                                  );
+                                }
+                                return ListView.builder(
+                                  controller: messageScrollController,
+                                  itemCount: messages.length,
+                                  itemBuilder: (context, index) {
+                                    return ChatBubble(
+                                      text: messages[index].content,
+                                      isSent: messages[index].senderID ==
+                                          widget.user.uid,
+                                      sentAt: messages[index].sentAt,
+                                    );
+                                  },
                                 );
                               }
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                if (messageScrollController.hasClients) {
-                                  _scrollToBottom();
-                                }
-                              });
-                              final messages =
-                                  snapshot.data as List<MessageModel>;
-                              return ListView.builder(
-                                controller: messageScrollController,
-                                itemCount: messages.length,
-                                itemBuilder: (context, index) {
-                                  return ChatBubble(
-                                    text: messages[index].content,
-                                    isSent: messages[index].senderID ==
-                                        widget.user.uid,
-                                    sentAt: messages[index].sentAt,
-                                  );
-                                },
-                              );
                             },
                           ),
                         ),
