@@ -218,6 +218,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                                     text: messages[index].content,
                                     isSent: messages[index].senderID ==
                                         widget.user.uid,
+                                    sentAt: messages[index].sentAt,
                                   );
                                 },
                               );
@@ -254,7 +255,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       ],
                     ),
                   )
-                : Expanded(flex: 5, child: SizedBox())
+                : const Expanded(flex: 5, child: SizedBox())
           ],
         ),
       );

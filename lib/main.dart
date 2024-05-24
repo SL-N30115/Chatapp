@@ -30,12 +30,6 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    UserModel user = UserModel(
-      email: 'chole@example.com',
-      username: 'Chole Adams',
-      uid: 'password123',
-    );
-
     return MaterialApp(
         title: 'Chat App',
         theme: ThemeData(
